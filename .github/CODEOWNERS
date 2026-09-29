@@ -1,0 +1,14 @@
+# Default: il proprietario del repository controlla tutto
+* @elisamancini
+
+# Costruzione immagine bootc
+/Containerfile @elisamancini
+/build_files/ @elisamancini
+/system_files/ @elisamancini
+
+# GitHub Actions: possono modificare la pipeline di build
+/.github/workflows/ @elisamancini
+
+# Configurazioni sicurezza
+/.github/renovate.json5 @elisamancini
+/.github/CODEOWNERS @elisamancini
