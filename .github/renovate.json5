@@ -2,31 +2,23 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
 
   "extends": [
-    "config:best-practices",
+    "config:best-practices"
   ],
 
   "rebaseWhen": "never",
 
+  "dockerfile": {
+    "fileMatch": [
+      "(^|/)(Containerfile|Dockerfile)$"
+    ]
+  },
+
   "packageRules": [
     {
-      "description": "Automerge only simple pin updates",
-      "automerge": true,
-      "matchUpdateTypes": [
-        "pin",
-        "pinDigest"
-      ]
-    },
-
-    {
-      "description": "Disable container updates inside GitHub Actions workflows",
+      "description": "Disable container digest updates inside GitHub Actions workflows",
       "enabled": false,
-      "matchUpdateTypes": [
-        "digest",
-        "pinDigest",
-        "pin"
-      ],
-      "matchDepTypes": [
-        "container"
+      "matchDatasources": [
+        "docker"
       ],
       "matchFileNames": [
         ".github/workflows/**.yaml",
@@ -35,7 +27,7 @@
     },
 
     {
-      "description": "Track Bazzite base image",
+      "description": "Update Bazzite base image digest",
       "matchDatasources": [
         "docker"
       ],
@@ -43,7 +35,10 @@
         "ghcr.io/ublue-os/bazzite-nvidia-open"
       ],
       "pinDigests": true,
-      "automerge": false
+
+      "automerge": true,
+      "platformAutomerge": true,
+      "automergeType": "pr"
     }
   ]
 }
