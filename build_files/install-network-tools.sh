@@ -95,7 +95,7 @@ dnf install -y "${OPENSNITCH_RPM}" "${OPENSNITCH_UI_RPM}"
 
 echo
 echo "==> Enabling services"
-systemctl enable opensnitchd.service
+systemctl enable opensnitch.service
 
 #######################################
 # Cleanup
