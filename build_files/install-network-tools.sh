@@ -87,7 +87,8 @@ OPEN_RELEASE_URLS=$(curl -fsSL \
     https://api.github.com/repos/evilsocket/opensnitch/releases/latest \
     | grep browser_download_url \
     | cut -d '"' -f4 \
-    | grep -E 'opensnitch(-ui)?-.*\.rpm$')
+    | grep -E 'opensnitch-[0-9].*\.x86_64\.rpm|opensnitch-ui-[0-9].*\.noarch\.rpm')
+
 
 
 if [[ -z "$OPEN_RELEASE_URLS" ]]; then
@@ -109,6 +110,8 @@ while read -r url; do
 done <<< "$OPEN_RELEASE_URLS"
 
 
+echo "Downloaded files:"
+ls -lh *.rpm
 
 #######################################
 # Install OpenSnitch
