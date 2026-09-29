@@ -82,34 +82,55 @@ dnf install -y proton-vpn-gnome-desktop
 echo
 echo "==> Searching latest OpenSnitch release"
 
-
-OPEN_RELEASE_URLS=$(curl -fsSL \
-    https://api.github.com/repos/evilsocket/opensnitch/releases/latest \
+OPEN_RELEASE_URLS=$(
+    curl \
+        --fail \
+        --silent \
+        --show-error \
+        --location \
+        --retry 10 \
+        --retry-all-errors \
+        --retry-delay 5 \
+        --connect-timeout 30 \
+        --max-time 300 \
+        -H "User-Agent: Bazzite-Build" \
+        https://api.github.com/repos/evilsocket/opensnitch/releases/latest \
     | grep browser_download_url \
     | cut -d '"' -f4 \
-    | grep -E 'opensnitch-[0-9].*\.x86_64\.rpm|opensnitch-ui-[0-9].*\.noarch\.rpm')
-
-
+    | grep -E 'opensnitch-[0-9].*\.x86_64\.rpm|opensnitch-ui-[0-9].*\.noarch\.rpm'
+)
 
 if [[ -z "$OPEN_RELEASE_URLS" ]]; then
     echo "ERROR: OpenSnitch RPMs not found"
     exit 1
 fi
 
-
 echo "$OPEN_RELEASE_URLS"
 
-
-
 echo
-echo "Downloading OpenSnitch RPMs"
-
+echo "==> Downloading OpenSnitch RPMs"
 
 while read -r url; do
-    curl -fLO "$url"
+    [[ -z "$url" ]] && continue
+
+    echo
+    echo "Downloading:"
+    echo "  $url"
+
+    curl \
+        --fail \
+        --location \
+        --retry 10 \
+        --retry-all-errors \
+        --retry-delay 5 \
+        --connect-timeout 30 \
+        --max-time 600 \
+        -H "User-Agent: Bazzite-Build" \
+        -O \
+        "$url"
 done <<< "$OPEN_RELEASE_URLS"
 
-
+echo
 echo "Downloaded files:"
 ls -lh *.rpm
 
