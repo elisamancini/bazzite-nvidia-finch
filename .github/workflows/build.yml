@@ -73,6 +73,17 @@ jobs:
             ${DEFAULT_TAG}
 
       # This is optional, this provides smaller delta updates
+
+      - name: Debug disk before rechunk
+        run: |
+            echo "=== DISK ==="
+            df -h
+            echo "=== PODMAN ==="
+            podman system df
+            echo "=== IMAGES ==="
+            podman images
+
+
       - name: Rechunk with rpm-ostree
         id: rechunk
         run: |
