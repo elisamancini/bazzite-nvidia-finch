@@ -72,37 +72,12 @@ jobs:
             ${IMAGE_NAME} \
             ${DEFAULT_TAG}
 
-        # Debug prima del rechunk
-      - name: Debug before rechunk and Free unused podman
-        run: |
-            echo "=== DISK ==="
-            df -h
-
-            echo
-            echo "=== PODMAN ==="
-            podman system df
-
-            echo
-            echo "=== IMAGES ==="
-            podman images
-
-            echo
-            echo "=== IMAGE SIZE ==="
-            podman image inspect localhost/${IMAGE_NAME}:${DEFAULT_TAG} \
-            --format 'Size={{.Size}} bytes'
 
       - name: Free unused podman objects before rechunk
         run: |
             podman system prune -af
             df -h
             podman system df
-                # Optional: create chunked OCI image
-            - name: Rechunk with rpm-ostree
-                id: rechunk
-                run: |
-                    just ostree-rechunk \
-                    ${IMAGE_NAME} \
-                    ${DEFAULT_TAG}
 
       - name: Debug before rechunk
         run: |
