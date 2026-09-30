@@ -74,6 +74,21 @@ jobs:
 
       # This is optional, this provides smaller delta updates
 
+      - name: Debug disk before Free Podman cache
+        run: |
+            echo "=== DISK ==="
+            df -h
+            echo "=== PODMAN ==="
+            podman system df
+            echo "=== IMAGES ==="
+            podman images
+
+      - name: Free Podman cache
+        run: |
+            podman image prune -af
+            podman system df
+            df -h
+
       - name: Debug disk before rechunk
         run: |
             echo "=== DISK ==="
