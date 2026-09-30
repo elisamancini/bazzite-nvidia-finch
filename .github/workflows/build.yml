@@ -65,7 +65,7 @@ jobs:
           echo "IMAGE_NAME=${IMAGE_NAME,,}" >> ${GITHUB_ENV}
 
      # This actually builds the container image
-        - name: Build Image
+      - name: Build Image
         id: build-image
         run: |
             just build \
@@ -73,7 +73,7 @@ jobs:
             ${DEFAULT_TAG}
 
         # Debug prima del rechunk
-        - name: Debug before rechunk
+      - name: Debug before rechunk
         run: |
             echo "=== DISK ==="
             df -h
@@ -92,7 +92,7 @@ jobs:
             --format 'Size={{.Size}} bytes'
 
         # Optional: create chunked OCI image
-        - name: Rechunk with rpm-ostree
+      - name: Rechunk with rpm-ostree
         id: rechunk
         run: |
             just ostree-rechunk \
@@ -100,7 +100,7 @@ jobs:
             ${DEFAULT_TAG}
 
         # Eseguito anche se il rechunk fallisce
-        - name: Debug after rechunk
+      - name: Debug after rechunk
         if: always()
         run: |
             echo "=== DISK ==="
