@@ -73,12 +73,6 @@ jobs:
             ${DEFAULT_TAG}
 
 
-      - name: Free unused podman objects before rechunk
-        run: |
-            podman system prune -af
-            df -h
-            podman system df
-
       - name: Debug before rechunk
         run: |
             echo "=== DISK ==="
