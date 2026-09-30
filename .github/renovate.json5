@@ -1,44 +1,38 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-
-  "extends": [
-    "config:best-practices"
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  extends: [
+    'config:best-practices',
   ],
-
-  "rebaseWhen": "never",
-
-  "dockerfile": {
-    "fileMatch": [
-      "(^|/)(Containerfile|Dockerfile)$"
-    ]
+  rebaseWhen: 'never',
+  dockerfile: {
+    managerFilePatterns: [
+      '/(^|/)(Containerfile|Dockerfile)$/',
+    ],
   },
-
-  "packageRules": [
+  packageRules: [
     {
-      "description": "Disable container digest updates inside GitHub Actions workflows",
-      "enabled": false,
-      "matchDatasources": [
-        "docker"
+      description: 'Disable container digest updates inside GitHub Actions workflows',
+      enabled: false,
+      matchDatasources: [
+        'docker',
       ],
-      "matchFileNames": [
-        ".github/workflows/**.yaml",
-        ".github/workflows/**.yml"
-      ]
+      matchFileNames: [
+        '.github/workflows/**.yaml',
+        '.github/workflows/**.yml',
+      ],
     },
-
     {
-      "description": "Update Bazzite base image digest",
-      "matchDatasources": [
-        "docker"
+      description: 'Update Bazzite base image digest',
+      matchDatasources: [
+        'docker',
       ],
-      "matchPackageNames": [
-        "ghcr.io/ublue-os/bazzite-nvidia-open"
+      matchPackageNames: [
+        'ghcr.io/ublue-os/bazzite-nvidia-open',
       ],
-      "pinDigests": true,
-
-      "automerge": true,
-      "platformAutomerge": true,
-      "automergeType": "pr"
-    }
-  ]
+      pinDigests: true,
+      automerge: true,
+      platformAutomerge: true,
+      automergeType: 'pr',
+    },
+  ],
 }
