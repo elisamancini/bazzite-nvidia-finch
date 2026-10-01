@@ -62,12 +62,12 @@ check_name() {
 }
 
 PROTON_REPO_RPM=$(one protonvpn-stable-release-*.noarch.rpm)
-OPENSNITCH_RPM=$(one opensnitch-[0-9]*.x86_64.rpm)
-OPENSNITCH_UI_RPM=$(one opensnitch-ui-[0-9]*.noarch.rpm)
+#OPENSNITCH_RPM=$(one opensnitch-[0-9]*.x86_64.rpm)
+#OPENSNITCH_UI_RPM=$(one opensnitch-ui-[0-9]*.noarch.rpm)
 
 check_name "${PROTON_REPO_RPM}" "protonvpn-stable-release"
-check_name "${OPENSNITCH_RPM}" "opensnitch"
-check_name "${OPENSNITCH_UI_RPM}" "opensnitch-ui"
+#check_name "${OPENSNITCH_RPM}" "opensnitch"
+#check_name "${OPENSNITCH_UI_RPM}" "opensnitch-ui"
 
 #######################################
 # Install ProtonVPN
@@ -85,17 +85,17 @@ dnf install -y proton-vpn-gnome-desktop
 # Install OpenSnitch
 #######################################
 
-echo
-echo "==> Installing OpenSnitch"
-dnf install -y "${OPENSNITCH_RPM}" "${OPENSNITCH_UI_RPM}"
+#echo
+#echo "==> Installing OpenSnitch"
+#dnf install -y "${OPENSNITCH_RPM}" "${OPENSNITCH_UI_RPM}"
 
 #######################################
 # Enable services
 #######################################
 
-echo
-echo "==> Enabling services"
-systemctl enable opensnitch.service
+#echo
+#echo "==> Enabling services"
+#systemctl enable opensnitch.service
 
 #######################################
 # Cleanup
