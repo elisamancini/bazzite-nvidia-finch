@@ -41,6 +41,7 @@ cp -avf "/ctx/system_files"/. /
 # this installs a package from fedora repos
 dnf5 install -y tmux
 
+bash /ctx/install-signature-policy.sh
 bash /ctx/install-network-tools.sh
 
 # Use a COPR Example:
