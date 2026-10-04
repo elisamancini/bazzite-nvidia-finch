@@ -98,6 +98,16 @@ build $target_image=image_name $tag=default_tag:
 
     set -euox pipefail
 
+    # Immagine base = ultimo FROM del Containerfile (ignora le opzioni --platform ecc.)
+    BASE_IMAGE="$(awk 'toupper($1)=="FROM" { for (i=2;i<=NF;i++) if ($i !~ /^--/) { img=$i; break } } END { print img }' Containerfile)"
+    if [[ -z "${BASE_IMAGE}" || "${BASE_IMAGE}" == *'$'* ]]; then
+        echo "Impossibile ricavare l'immagine base dal Containerfile: '${BASE_IMAGE}'" >&2
+        exit 1
+    fi
+    podman pull --quiet "${BASE_IMAGE}"
+    BASE_VERSION="$(podman inspect "${BASE_IMAGE}" | jq -r '.[0].Config.Labels["org.opencontainers.image.version"] // "unknown"')"
+    BASE_DIGEST="$(podman inspect "${BASE_IMAGE}" | jq -r '.[0].Digest')"
+
     BUILD_ARGS=()
     LABELS=()
     if [[ -z "$(git status -s)" ]]; then
@@ -106,9 +116,14 @@ build $target_image=image_name $tag=default_tag:
         LABELS+=("--label" "org.opencontainers.image.documentation=https://raw.githubusercontent.com/{{ repo_organization }}/{{ image_name }}/${GIT_SHA}/README.md")
         LABELS+=("--label" "org.opencontainers.image.source=https://github.com/{{ repo_organization }}/{{ image_name }}/blob/${GIT_SHA}/Containerfile")
         LABELS+=("--label" "org.opencontainers.image.url=https://github.com/{{ repo_organization }}/{{ image_name }}/tree/${GIT_SHA}")
-        LABELS+=("--label" "org.opencontainers.image.version={{ default_tag }}.$(date +%Y%m%d)-${GIT_SHA}")
+        # Version = versione della base + sha del commit (e' quella mostrata da rpm-ostree status)
+        LABELS+=("--label" "org.opencontainers.image.version=${BASE_VERSION}-${GIT_SHA}")
     fi
 
+    # Informazioni sulla base
+    LABELS+=("--label" "org.opencontainers.image.base.name=${BASE_IMAGE}")
+    LABELS+=("--label" "org.opencontainers.image.base.digest=${BASE_DIGEST}")
+    LABELS+=("--label" "io.github.{{ repo_organization }}.base-version=${BASE_VERSION}")
     # Image metadata for https://artifacthub.io/ - This is optional but is highly recommended so we all can get a index of all the custom images
     # The metadata by itself is not going to do anything, you choose if you want your image to be on ArtifactHub or not.
     LABELS+=("--label" "io.artifacthub.package.deprecated=false")
@@ -117,7 +132,8 @@ build $target_image=image_name $tag=default_tag:
     LABELS+=("--label" "io.artifacthub.package.logo-url={{ image_logo_url }}")
     LABELS+=("--label" "io.artifacthub.package.prerelease=false")
     LABELS+=("--label" "org.opencontainers.image.created=$(date -u +%Y\-%m\-%d\T%H\:%M\:%S\Z)")
-    LABELS+=("--label" "org.opencontainers.image.description={{ image_desc }}")
+    # La description e' quella mostrata nella pagina del pacchetto su GitHub
+    LABELS+=("--label" "org.opencontainers.image.description={{ image_desc }} (base: ${BASE_IMAGE} ${BASE_VERSION})")
     LABELS+=("--label" "org.opencontainers.image.title={{ image_name }}")
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
 
@@ -168,6 +184,14 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
 
     set -xeuo pipefail
 
+    # Salva le etichette di metadati PRIMA del rechunk: il rechunk ricostruisce
+    # l'immagine dal rootfs e puo' non riportarle (es. org.opencontainers.image.version)
+    LABELS_JSON="$(mktemp)"
+    trap 'rm -f "${LABELS_JSON}"' EXIT
+    podman inspect "${target_image}:${tag}" \
+      | jq '(.[0].Config.Labels // {}) | with_entries(select(.key | test("^(org\\.opencontainers|io\\.artifacthub|io\\.github)\\.")))' \
+      > "${LABELS_JSON}"
+
     # Use the already-built local image to avoid pulling from a remote registry
     RPM_OSTREE_CHUNKER_IMAGE="localhost/${target_image}:${tag}"
 
@@ -185,6 +209,16 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
       --bootc \
       --rootfs /rpm-ostree \
       --output "containers-storage:[overlay@/run/host-container-storage+/run/rpm-ostree-storage]localhost/${target_image}:${tag}"
+
+    # Riapplica le etichette sull'immagine rechunkata (solo metadati, nessun layer nuovo)
+    {
+        echo "FROM localhost/${target_image}:${tag}"
+        jq -r 'to_entries[] | "LABEL " + (.key | @json) + "=" + (.value | @json)' "${LABELS_JSON}"
+    } | podman build --pull=never --tag "localhost/${target_image}:${tag}" --file - .
+
+    # Mostra nel log la versione risultante
+    podman inspect "localhost/${target_image}:${tag}" \
+      | jq -r '.[0].Config.Labels["org.opencontainers.image.version"]'
 
 # Generate Default Tag
 [group('Utility')]
@@ -207,6 +241,12 @@ generate-build-tags $target_image=image_name $tag=default_tag:
         BUILD_TAGS+=("${tag}-${GIT_SHA}")
         BUILD_TAGS+=("${tag}-${DATE}-${GIT_SHA}")
         BUILD_TAGS+=("${DATE}-${GIT_SHA}")
+
+        # Tag con la versione della base (uguale a Version di rpm-ostree status)
+        BASE_VERSION="$(podman inspect "${target_image}:${tag}" | jq -r '.[0].Config.Labels["io.github.{{ repo_organization }}.base-version"] // empty')"
+        if [[ "${BASE_VERSION}" =~ ^[A-Za-z0-9_.-]+$ && "${BASE_VERSION}" != "unknown" ]]; then
+            BUILD_TAGS+=("${BASE_VERSION}-${GIT_SHA}")
+        fi
     fi
 
     BUILD_TAGS+=("${DATE}")
