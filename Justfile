@@ -124,7 +124,6 @@ build $target_image=image_name $tag=default_tag:
     LABELS+=("--label" "org.opencontainers.image.base.name=${BASE_IMAGE}")
     LABELS+=("--label" "org.opencontainers.image.base.digest=${BASE_DIGEST}")
     LABELS+=("--label" "io.github.{{ repo_organization }}.base-version=${BASE_VERSION}")
- 
     # Image metadata for https://artifacthub.io/ - This is optional but is highly recommended so we all can get a index of all the custom images
     # The metadata by itself is not going to do anything, you choose if you want your image to be on ArtifactHub or not.
     LABELS+=("--label" "io.artifacthub.package.deprecated=false")
