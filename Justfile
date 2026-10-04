@@ -215,7 +215,7 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
         echo "FROM localhost/${target_image}:${tag}"
         jq -r 'to_entries[] | "LABEL " + (.key | @json) + "=" + (.value | @json)' "${LABELS_JSON}"
     } | podman build --pull=never --tag "localhost/${target_image}:${tag}" --file - .
- 
+
     # Mostra nel log la versione risultante
     podman inspect "localhost/${target_image}:${tag}" \
       | jq -r '.[0].Config.Labels["org.opencontainers.image.version"]'
