@@ -168,6 +168,14 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
 
     set -xeuo pipefail
 
+    # Salva le etichette di metadati PRIMA del rechunk: il rechunk ricostruisce
+    # l'immagine dal rootfs e puo' non riportarle (es. org.opencontainers.image.version)
+    LABELS_JSON="$(mktemp)"
+    trap 'rm -f "${LABELS_JSON}"' EXIT
+    podman inspect "${target_image}:${tag}" \
+      | jq '(.[0].Config.Labels // {}) | with_entries(select(.key | test("^(org\\.opencontainers|io\\.artifacthub)\\.")))' \
+      > "${LABELS_JSON}"
+
     # Use the already-built local image to avoid pulling from a remote registry
     RPM_OSTREE_CHUNKER_IMAGE="localhost/${target_image}:${tag}"
 
@@ -185,6 +193,16 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
       --bootc \
       --rootfs /rpm-ostree \
       --output "containers-storage:[overlay@/run/host-container-storage+/run/rpm-ostree-storage]localhost/${target_image}:${tag}"
+
+    # Riapplica le etichette sull'immagine rechunkata (solo metadati, nessun layer nuovo)
+    {
+        echo "FROM localhost/${target_image}:${tag}"
+        jq -r 'to_entries[] | "LABEL " + (.key | @json) + "=" + (.value | @json)' "${LABELS_JSON}"
+    } | podman build --pull=never --tag "localhost/${target_image}:${tag}" --file - .
+
+    # Mostra nel log la versione risultante
+    podman inspect "localhost/${target_image}:${tag}" \
+      | jq -r '.[0].Config.Labels["org.opencontainers.image.version"]'
 
 # Generate Default Tag
 [group('Utility')]
