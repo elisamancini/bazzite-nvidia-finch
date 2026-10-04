@@ -143,8 +143,6 @@ build $target_image=image_name $tag=default_tag:
  
     podman build "${PODMAN_BUILD_ARGS[@]}" .
  
-
-
 # Split the image for smaller updates (New)!
 rechunk $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
@@ -222,8 +220,6 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
     # Mostra nel log la versione risultante
     podman inspect "localhost/${target_image}:${tag}" \
       | jq -r '.[0].Config.Labels["org.opencontainers.image.version"]'
- 
-
 
 # Generate Default Tag
 [group('Utility')]
