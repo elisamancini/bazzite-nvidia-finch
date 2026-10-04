@@ -95,9 +95,9 @@ sudoif command *args:
 # Build the image using the specified parameters
 build $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
- 
+
     set -euox pipefail
- 
+
     # Immagine base = ultimo FROM del Containerfile (ignora le opzioni --platform ecc.)
     BASE_IMAGE="$(awk 'toupper($1)=="FROM" { for (i=2;i<=NF;i++) if ($i !~ /^--/) { img=$i; break } } END { print img }' Containerfile)"
     if [[ -z "${BASE_IMAGE}" || "${BASE_IMAGE}" == *'$'* ]]; then
@@ -107,7 +107,7 @@ build $target_image=image_name $tag=default_tag:
     podman pull --quiet "${BASE_IMAGE}"
     BASE_VERSION="$(podman inspect "${BASE_IMAGE}" | jq -r '.[0].Config.Labels["org.opencontainers.image.version"] // "unknown"')"
     BASE_DIGEST="$(podman inspect "${BASE_IMAGE}" | jq -r '.[0].Digest')"
- 
+
     BUILD_ARGS=()
     LABELS=()
     if [[ -z "$(git status -s)" ]]; then
@@ -119,7 +119,7 @@ build $target_image=image_name $tag=default_tag:
         # Version = versione della base + sha del commit (e' quella mostrata da rpm-ostree status)
         LABELS+=("--label" "org.opencontainers.image.version=${BASE_VERSION}-${GIT_SHA}")
     fi
- 
+
     # Informazioni sulla base
     LABELS+=("--label" "org.opencontainers.image.base.name=${BASE_IMAGE}")
     LABELS+=("--label" "org.opencontainers.image.base.digest=${BASE_DIGEST}")
@@ -136,12 +136,12 @@ build $target_image=image_name $tag=default_tag:
     LABELS+=("--label" "org.opencontainers.image.description={{ image_desc }} (base: ${BASE_IMAGE} ${BASE_VERSION})")
     LABELS+=("--label" "org.opencontainers.image.title={{ image_name }}")
     LABELS+=("--label" "org.opencontainers.image.vendor={{ repo_organization }}")
- 
+
     # This actually builds the image!
     PODMAN_BUILD_ARGS=("${BUILD_ARGS[@]}" "${LABELS[@]}" --pull=newer --tag "${target_image}:${tag}" --file Containerfile)
- 
+
     podman build "${PODMAN_BUILD_ARGS[@]}" .
- 
+
 # Split the image for smaller updates (New)!
 rechunk $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
@@ -181,9 +181,9 @@ rechunk $target_image=image_name $tag=default_tag:
 # Split the image for smaller updates (Classical)!
 ostree-rechunk $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
- 
+
     set -xeuo pipefail
- 
+
     # Salva le etichette di metadati PRIMA del rechunk: il rechunk ricostruisce
     # l'immagine dal rootfs e puo' non riportarle (es. org.opencontainers.image.version)
     LABELS_JSON="$(mktemp)"
@@ -191,12 +191,12 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
     podman inspect "${target_image}:${tag}" \
       | jq '(.[0].Config.Labels // {}) | with_entries(select(.key | test("^(org\\.opencontainers|io\\.artifacthub|io\\.github)\\.")))' \
       > "${LABELS_JSON}"
- 
+
     # Use the already-built local image to avoid pulling from a remote registry
     RPM_OSTREE_CHUNKER_IMAGE="localhost/${target_image}:${tag}"
- 
+
     GRAPHROOT="$(podman info --format '{{ '{{.Store.GraphRoot}}' }}')"
- 
+
     podman run --rm --pull=never --privileged \
       --mount=type=image,src="${target_image}:${tag}",target=/rpm-ostree \
       --mount=type=bind,src=${GRAPHROOT},target=/run/host-container-storage,rw \
@@ -209,7 +209,7 @@ ostree-rechunk $target_image=image_name $tag=default_tag:
       --bootc \
       --rootfs /rpm-ostree \
       --output "containers-storage:[overlay@/run/host-container-storage+/run/rpm-ostree-storage]localhost/${target_image}:${tag}"
- 
+
     # Riapplica le etichette sull'immagine rechunkata (solo metadati, nessun layer nuovo)
     {
         echo "FROM localhost/${target_image}:${tag}"
@@ -233,7 +233,7 @@ generate-default-tag $tag=default_tag:
 generate-build-tags $target_image=image_name $tag=default_tag:
     #!/usr/bin/env bash
     set -eoux pipefail
- 
+
     DATE=$(date +%Y%m%d)
     BUILD_TAGS=()
     if [[ -z "$(git status -s)" ]]; then
@@ -241,18 +241,18 @@ generate-build-tags $target_image=image_name $tag=default_tag:
         BUILD_TAGS+=("${tag}-${GIT_SHA}")
         BUILD_TAGS+=("${tag}-${DATE}-${GIT_SHA}")
         BUILD_TAGS+=("${DATE}-${GIT_SHA}")
- 
+
         # Tag con la versione della base (uguale a Version di rpm-ostree status)
         BASE_VERSION="$(podman inspect "${target_image}:${tag}" | jq -r '.[0].Config.Labels["io.github.{{ repo_organization }}.base-version"] // empty')"
         if [[ "${BASE_VERSION}" =~ ^[A-Za-z0-9_.-]+$ && "${BASE_VERSION}" != "unknown" ]]; then
             BUILD_TAGS+=("${BASE_VERSION}-${GIT_SHA}")
         fi
     fi
- 
+
     BUILD_TAGS+=("${DATE}")
     BUILD_TAGS+=("${tag}")
     BUILD_TAGS+=("${tag}-${DATE}")
- 
+
     echo "${BUILD_TAGS[@]}"
 
 # Tag Images
